@@ -7,6 +7,7 @@ import TurndownService from "turndown";
 import { cn } from "@/lib/cn";
 import { OFFER_SOURCE_LABELS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { OfferAiPanel } from "@/components/offers/OfferAiPanel";
 import type { Offer, OfferStatus } from "@/types/supabase";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -125,36 +126,42 @@ export function OfferViewer({ offer, onStatusChange, onStar, onApply }: OfferVie
         </div>
       </div>
 
-      {/* Description markdown */}
-      <div className="flex-1 overflow-y-auto px-6 py-5">
-        {markdown ? (
-          <div className="prose prose-sm max-w-2xl
-            prose-headings:text-ink prose-headings:font-semibold
-            prose-p:text-ink-muted prose-p:leading-relaxed
-            prose-li:text-ink-muted
-            prose-strong:text-ink prose-strong:font-semibold
-            prose-h1:text-sm prose-h2:text-sm prose-h3:text-sm
-            prose-ul:my-2 prose-li:my-0.5
-            prose-hr:border-border
-          ">
-            <ReactMarkdown>{markdown}</ReactMarkdown>
-          </div>
-        ) : (
-          <div className="flex flex-col items-start gap-3">
-            <p className="text-sm text-ink-muted">
-              Pas de description disponible pour cette offre.
-            </p>
-            <a
-              href={offer.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors"
-            >
-              <ExternalLink size={13} />
-              Voir l'offre sur {OFFER_SOURCE_LABELS[offer.source]}
-            </a>
-          </div>
-        )}
+      {/* Scrollable body: description + AI panel */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Description markdown */}
+        <div className="px-6 py-5">
+          {markdown ? (
+            <div className="prose prose-sm max-w-2xl
+              prose-headings:text-ink prose-headings:font-semibold
+              prose-p:text-ink-muted prose-p:leading-relaxed
+              prose-li:text-ink-muted
+              prose-strong:text-ink prose-strong:font-semibold
+              prose-h1:text-sm prose-h2:text-sm prose-h3:text-sm
+              prose-ul:my-2 prose-li:my-0.5
+              prose-hr:border-border
+            ">
+              <ReactMarkdown>{markdown}</ReactMarkdown>
+            </div>
+          ) : (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-sm text-ink-muted">
+                Pas de description disponible pour cette offre.
+              </p>
+              <a
+                href={offer.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition-colors"
+              >
+                <ExternalLink size={13} />
+                Voir l'offre sur {OFFER_SOURCE_LABELS[offer.source]}
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Panneau IA (score, résumé, infos clés, conseils candidature) */}
+        <OfferAiPanel offer={offer} />
       </div>
 
       {/* CTA bas */}

@@ -11,6 +11,14 @@ export type ApplicationStatus = "sent" | "interview" | "refused" | "offer";
 
 export type FollowUpStatus = "pending" | "sent" | "cancelled";
 
+export interface OfferKeyInfo {
+  stack: string[];
+  level: string;
+  remote: string;
+  salary: string;
+  contract: string;
+}
+
 export interface Offer {
   id: string;
   url: string;
@@ -25,6 +33,10 @@ export interface Offer {
   starred: boolean;
   relevance_score: number | null;
   relevance_summary: string | null;
+  // Nouvelles colonnes IA
+  ai_offer_summary: string | null;
+  ai_key_info: OfferKeyInfo | null;
+  ai_analyzed_at: string | null;
   scraped_at: string;
   created_at: string;
   updated_at: string;
@@ -65,9 +77,36 @@ export interface FollowUp {
   application?: Application;
 }
 
+export interface CandidateProfile {
+  id: string;
+  full_name: string;
+  title: string;
+  location: string;
+  availability: string;
+  stack_backend: string[];
+  stack_frontend: string[];
+  stack_mobile: string[];
+  stack_ai: string[];
+  stack_devops: string[];
+  mission_types: string[];
+  not_interested: string[];
+  experience_years: number;
+  free_text: string;
+  updated_at: string;
+}
+
 export type CreateOfferPayload = Omit<
   Offer,
-  "id" | "created_at" | "updated_at" | "scraped_at" | "starred" | "relevance_score" | "relevance_summary"
+  | "id"
+  | "created_at"
+  | "updated_at"
+  | "scraped_at"
+  | "starred"
+  | "relevance_score"
+  | "relevance_summary"
+  | "ai_offer_summary"
+  | "ai_key_info"
+  | "ai_analyzed_at"
 > & { scraped_at?: string };
 
 export type CreateApplicationPayload = Omit<
