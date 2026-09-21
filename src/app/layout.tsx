@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
-
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
-const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Job Tracker",
@@ -13,7 +11,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jetbrains.variable} bg-bg text-ink min-h-screen`}>
+      <body
+        className={`${GeistSans.variable} ${GeistMono.variable} bg-bg text-ink min-h-screen`}
+        style={{ fontFamily: "var(--font-geist-sans, system-ui, sans-serif)" }}
+      >
         {children}
       </body>
     </html>

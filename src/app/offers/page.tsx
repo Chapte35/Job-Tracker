@@ -8,6 +8,7 @@ import { OfferViewer } from "@/components/offers/OfferViewer";
 import { ScrapeModal } from "@/components/offers/ScrapeModal";
 import { ApplyModal } from "@/components/offers/ApplyModal";
 import { OFFER_FILTERS, type OfferFilter } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import type { Offer, OfferStatus } from "@/types/supabase";
 
@@ -75,32 +76,33 @@ export default function OffersPage() {
   return (
     <div className="flex h-full">
       {/* Colonne liste */}
-      <div className="w-80 shrink-0 flex flex-col border-r border-border bg-bg-raised">
+      <div className="w-[280px] shrink-0 flex flex-col border-r border-border bg-bg">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
-          <span className="text-sm font-semibold text-ink">
+        <div className="px-4 h-[52px] flex items-center justify-between shrink-0 border-b border-border">
+          <span className="text-sm font-medium text-ink">
             {offers.length} offre{offers.length !== 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-1">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => void refresh()}
-              className="p-1.5 rounded text-ink-faint hover:text-ink-muted hover:bg-bg-overlay transition-colors"
               title="Rafraîchir"
             >
               <RefreshCw size={13} />
-            </button>
-            <button
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setScrapeOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-accent hover:bg-accent-hover text-white text-xs font-medium transition-colors"
             >
               <Plus size={12} />
               Scraper
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Filtres + tri */}
-        <div className="flex gap-1 px-3 py-2 border-b border-border-subtle overflow-x-auto shrink-0">
+        <div className="flex gap-0.5 px-3 py-2 border-b border-border overflow-x-auto shrink-0">
           {OFFER_FILTERS.map((f) => (
             <button
               key={f.id}
@@ -108,20 +110,20 @@ export default function OffersPage() {
               className={cn(
                 "shrink-0 px-2.5 py-1 rounded text-xs transition-colors",
                 filter === f.id
-                  ? "bg-accent/10 text-accent font-medium"
+                  ? "bg-bg-overlay text-ink font-medium"
                   : "text-ink-muted hover:text-ink hover:bg-bg-overlay"
               )}
             >
               {f.label}
             </button>
           ))}
-          <div className="w-px bg-border-subtle shrink-0 mx-1" />
+          <div className="w-px bg-border shrink-0 mx-1" />
           <button
             onClick={() => setSortMode((m) => m === "date" ? "score" : "date")}
             className={cn(
               "shrink-0 px-2.5 py-1 rounded text-xs transition-colors",
               sortMode === "score"
-                ? "bg-emerald-50 text-emerald-700 font-medium"
+                ? "bg-bg-overlay text-ink font-medium"
                 : "text-ink-muted hover:text-ink hover:bg-bg-overlay"
             )}
             title="Trier par pertinence"
@@ -132,11 +134,13 @@ export default function OffersPage() {
 
         {/* Bouton classifier */}
         {unclassifiedCount > 0 && (
-          <div className="px-3 py-2 border-b border-border-subtle shrink-0">
-            <button
+          <div className="px-3 py-2 border-b border-border shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
               onClick={() => void handleClassify()}
               disabled={classifying}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded border border-border text-xs text-ink-muted hover:text-ink hover:border-border-strong transition-colors disabled:opacity-50"
             >
               {classifying
                 ? <Loader2 size={12} className="animate-spin" />
@@ -144,11 +148,11 @@ export default function OffersPage() {
               }
               {classifying
                 ? "Classification en cours…"
-                : `Classifier ${unclassifiedCount} offre${unclassifiedCount > 1 ? "s" : ""} via Qwen`
+                : `Classifier ${unclassifiedCount} offre${unclassifiedCount > 1 ? "s" : ""}`
               }
-            </button>
+            </Button>
             {classifyResult && (
-              <p className="text-2xs text-ink-faint text-center mt-1">{classifyResult}</p>
+              <p className="text-2xs text-ink-faint text-center mt-1.5">{classifyResult}</p>
             )}
           </div>
         )}
@@ -157,16 +161,16 @@ export default function OffersPage() {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-32">
-              <Loader2 size={16} className="animate-spin text-ink-faint" />
+              <Loader2 size={14} className="animate-spin text-ink-faint" />
             </div>
           ) : error ? (
             <p className="px-4 py-3 text-xs text-red-500">{error}</p>
           ) : sortedOffers.length === 0 ? (
-            <div className="px-4 py-8 text-center">
+            <div className="px-4 py-10 text-center">
               <p className="text-sm text-ink-muted">Aucune offre</p>
               <button
                 onClick={() => setScrapeOpen(true)}
-                className="mt-2 text-xs text-accent hover:text-accent-hover transition-colors"
+                className="mt-2 text-xs text-ink-muted hover:text-ink transition-colors underline underline-offset-2"
               >
                 Lancer un scrape
               </button>

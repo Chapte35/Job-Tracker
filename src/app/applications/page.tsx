@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { ApplicationStatus, FollowUpStatus } from "@/types/supabase";
 
-// ─── Types enrichis ────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface FollowUpRow {
   id: string;
@@ -144,7 +144,7 @@ function MailBodyDialog({ app, onClose }: { app: ApplicationRow | null; onClose:
           <DialogTitle>Mail envoyé — {app.offer?.company ?? "?"}</DialogTitle>
           <DialogDescription className="text-xs font-mono">{app.subject}</DialogDescription>
         </DialogHeader>
-        <pre className="text-sm text-ink whitespace-pre-wrap font-sans leading-relaxed bg-bg-overlay rounded p-4 mt-2">
+        <pre className="text-sm text-ink whitespace-pre-wrap font-mono leading-relaxed bg-bg-overlay rounded-md p-4 mt-2 border border-border text-xs">
           {app.body}
         </pre>
       </DialogContent>
@@ -159,7 +159,6 @@ export default function ApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modale confirmation
   const [confirm, setConfirm] = useState<{
     title: string;
     description: string;
@@ -168,7 +167,6 @@ export default function ApplicationsPage() {
     action: () => Promise<void>;
   } | null>(null);
 
-  // Modale corps du mail
   const [mailApp, setMailApp] = useState<ApplicationRow | null>(null);
 
   const fetchApps = useCallback(async () => {
@@ -188,8 +186,6 @@ export default function ApplicationsPage() {
   useEffect(() => {
     fetchApps();
   }, [fetchApps]);
-
-  // ── Actions ─────────────────────────────────────────────────────────────────
 
   function askCancelFollowUp(app: ApplicationRow) {
     setConfirm({
@@ -221,36 +217,34 @@ export default function ApplicationsPage() {
     });
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-        <div>
-          <h1 className="text-base font-semibold text-ink">Candidatures</h1>
-          <p className="text-xs text-ink-muted mt-0.5">
-            {apps.length} candidature{apps.length !== 1 ? "s" : ""} envoyée{apps.length !== 1 ? "s" : ""}
-          </p>
+      <div className="px-6 h-[52px] flex items-center justify-between border-b border-border shrink-0">
+        <div className="flex items-baseline gap-2">
+          <h1 className="text-sm font-medium text-ink">Candidatures</h1>
+          <span className="text-xs text-ink-faint">
+            {apps.length} envoyée{apps.length !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
 
       {/* Contenu */}
       <div className="flex-1 overflow-auto">
         {loading && (
-          <div className="flex items-center justify-center h-40 text-ink-muted text-sm">
+          <div className="flex items-center justify-center h-40 text-ink-faint text-sm">
             Chargement…
           </div>
         )}
 
         {error && (
-          <div className="m-6 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+          <div className="m-6 p-3 rounded-md border border-red-200 bg-red-50 text-red-700 text-xs">
             {error}
           </div>
         )}
 
         {!loading && !error && apps.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-40 gap-2">
+          <div className="flex flex-col items-center justify-center h-40 gap-1.5">
             <p className="text-ink-muted text-sm">Aucune candidature pour l&apos;instant.</p>
             <p className="text-ink-faint text-xs">Postule depuis la vue Offres !</p>
           </div>
@@ -259,8 +253,8 @@ export default function ApplicationsPage() {
         {!loading && !error && apps.length > 0 && (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-bg-overlay">
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-ink-muted w-1/3">Poste</th>
+              <tr className="border-b border-border">
+                <th className="text-left px-5 py-2.5 text-xs font-medium text-ink-muted w-1/3">Poste</th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-ink-muted">Date d&apos;envoi</th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-ink-muted">Statut</th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-ink-muted">Relance</th>
@@ -271,9 +265,9 @@ export default function ApplicationsPage() {
               {apps.map((app) => (
                 <tr key={app.id} className="hover:bg-bg-overlay transition-colors group">
                   {/* Poste */}
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3">
                     <div className="flex flex-col gap-0.5">
-                      <span className="font-medium text-ink truncate max-w-xs">
+                      <span className="font-medium text-ink text-sm truncate max-w-xs">
                         {app.offer?.title ?? app.subject}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -289,7 +283,7 @@ export default function ApplicationsPage() {
                             href={app.offer.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-ink-faint hover:text-accent transition-colors opacity-0 group-hover:opacity-100"
+                            className="text-ink-faint hover:text-ink transition-colors opacity-0 group-hover:opacity-100"
                           >
                             <ExternalLink className="h-3 w-3" />
                           </a>
@@ -299,7 +293,7 @@ export default function ApplicationsPage() {
                   </td>
 
                   {/* Date */}
-                  <td className="px-4 py-3 text-ink-muted whitespace-nowrap">
+                  <td className="px-4 py-3 text-ink-muted text-xs whitespace-nowrap">
                     {formatDate(app.sent_at)}
                   </td>
 
@@ -336,13 +330,13 @@ export default function ApplicationsPage() {
 
                         {app.status !== "interview" && (
                           <DropdownMenuItem onClick={() => askUpdateStatus(app, "interview")}>
-                            <CheckCircle className="h-4 w-4 text-accent" />
+                            <CheckCircle className="h-4 w-4" />
                             Entretien obtenu
                           </DropdownMenuItem>
                         )}
                         {app.status !== "offer" && (
                           <DropdownMenuItem onClick={() => askUpdateStatus(app, "offer")}>
-                            <CheckCircle className="h-4 w-4 text-emerald-600" />
+                            <CheckCircle className="h-4 w-4" />
                             Offre reçue
                           </DropdownMenuItem>
                         )}
@@ -354,12 +348,11 @@ export default function ApplicationsPage() {
                         )}
                         {app.status !== "sent" && (
                           <DropdownMenuItem onClick={() => askUpdateStatus(app, "sent")}>
-                            <Mail className="h-4 w-4 text-ink-muted" />
+                            <Mail className="h-4 w-4" />
                             Remettre en &quot;Envoyée&quot;
                           </DropdownMenuItem>
                         )}
 
-                        {/* Annuler relance si pending */}
                         {app.follow_ups?.some((f) => f.status === "pending") && (
                           <>
                             <DropdownMenuSeparator />
@@ -382,7 +375,6 @@ export default function ApplicationsPage() {
         )}
       </div>
 
-      {/* Modales */}
       <ConfirmDialog
         open={!!confirm}
         title={confirm?.title ?? ""}

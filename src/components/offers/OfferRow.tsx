@@ -17,7 +17,7 @@ interface OfferRowProps {
 
 const STATUS_PILL: Record<string, string> = {
   new:      "bg-bg-overlay text-ink-muted",
-  to_apply: "bg-accent/10 text-accent",
+  to_apply: "bg-bg-overlay text-ink border border-border",
   ignored:  "bg-bg-overlay text-ink-faint",
 };
 
@@ -34,12 +34,12 @@ export function OfferRow({ offer, selected, onClick, onStar, onIgnore, onApply }
       className={cn(
         "group flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-border-subtle",
         "transition-colors hover:bg-bg-overlay",
-        selected && "bg-accent/5 border-l-2 border-l-accent"
+        selected && "bg-bg-overlay"
       )}
     >
       {/* Source dot */}
       <div className="shrink-0 mt-1.5">
-        <span className={cn("block w-2 h-2 rounded-full", OFFER_SOURCE_DOT[offer.source])} />
+        <span className={cn("block w-1.5 h-1.5 rounded-full", OFFER_SOURCE_DOT[offer.source])} />
       </div>
 
       {/* Contenu */}
@@ -50,33 +50,33 @@ export function OfferRow({ offer, selected, onClick, onStar, onIgnore, onApply }
           </p>
           {/* Actions au hover */}
           <div className={cn(
-            "shrink-0 flex items-center gap-1 transition-opacity",
+            "shrink-0 flex items-center gap-0.5 transition-opacity",
             "opacity-0 group-hover:opacity-100",
             selected && "opacity-100"
           )}>
             <button
               onClick={(e) => { e.stopPropagation(); onStar(!offer.starred); }}
               className={cn(
-                "p-1 rounded transition-colors",
-                offer.starred ? "text-amber-500" : "text-ink-faint hover:text-ink-muted"
+                "p-1.5 rounded transition-colors",
+                offer.starred ? "text-amber-500" : "text-ink-faint hover:text-ink-muted hover:bg-bg-overlay"
               )}
               title={offer.starred ? "Retirer des suivies" : "Suivre"}
             >
-              <Star size={13} fill={offer.starred ? "currentColor" : "none"} />
+              <Star size={12} fill={offer.starred ? "currentColor" : "none"} />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onApply(); }}
-              className="p-1 rounded text-ink-faint hover:text-accent transition-colors"
+              className="p-1.5 rounded text-ink-faint hover:text-ink hover:bg-bg-overlay transition-colors"
               title="Candidater"
             >
-              <Send size={13} />
+              <Send size={12} />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onIgnore(); }}
-              className="p-1 rounded text-ink-faint hover:text-ink-muted transition-colors"
+              className="p-1.5 rounded text-ink-faint hover:text-ink hover:bg-bg-overlay transition-colors"
               title="Ignorer"
             >
-              <EyeOff size={13} />
+              <EyeOff size={12} />
             </button>
           </div>
         </div>
@@ -104,7 +104,6 @@ export function OfferRow({ offer, selected, onClick, onStar, onIgnore, onApply }
           <RelevanceBadge score={offer.relevance_score} />
         </div>
 
-        {/* Résumé pertinence si dispo */}
         {offer.relevance_summary && (
           <p className="text-2xs text-ink-faint mt-1 truncate-2 leading-relaxed">
             {offer.relevance_summary}

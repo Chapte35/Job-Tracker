@@ -1,23 +1,25 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useScrape } from "@/hooks/useScrape";
 import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface ScrapeModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
-
-const PLACEHOLDERS = [
-  "wttj",
-  "https://www.welcometothejungle.com/fr/jobs?query=react",
-  "https://candidat.francetravail.fr/offres/recherche?motsCles=react",
-  "https://www.linkedin.com/jobs/search/?keywords=react+developer",
-  "https://fr.indeed.com/jobs?q=développeur+react",
-];
 
 export function ScrapeModal({ open, onClose, onSuccess }: ScrapeModalProps) {
   const [url, setUrl] = useState("");
@@ -33,14 +35,6 @@ export function ScrapeModal({ open, onClose, onSuccess }: ScrapeModalProps) {
     }
   }, [open]);
 
-  // Fermer avec Escape
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
   const handleSubmit = async () => {
     if (!url.trim()) return;
     const res = await scrape(url.trim());
@@ -50,61 +44,33 @@ export function ScrapeModal({ open, onClose, onSuccess }: ScrapeModalProps) {
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md p-0 gap-0">
+        <DialogHeader className="px-5 py-4 border-b border-border mb-0">
+          <DialogTitle>Scraper des offres</DialogTitle>
+          <DialogDescription>
+            Tape <span className="font-mono text-ink bg-bg-overlay px-1 rounded text-xs">wttj</span> pour tes
+            jobs-matches, ou colle une URL France Travail / LinkedIn / Indeed.
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Modal */}
-      <div className="relative z-10 w-full max-w-lg mx-4 bg-surface-raised border border-border rounded-lg shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h2 className="text-sm font-semibold text-ink">Scraper des offres</h2>
-          <button
-            onClick={onClose}
-            className="text-ink-muted hover:text-ink transition-colors p-0.5 rounded"
-          >
-            <X size={16} />
-          </button>
-        </div>
+        <div className="px-5 py-4 flex flex-col gap-3">
+          <Input
+            ref={inputRef}
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); }}
+            placeholder="wttj  ou  https://candidat.francetravail.fr/…"
+          />
 
-        {/* Body */}
-        <div className="p-4 flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-ink-muted">
-              URL de recherche ou source
-            </label>
-            <input
-              ref={inputRef}
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); }}
-              placeholder={PLACEHOLDERS[0]}
-              className={cn(
-                "w-full bg-surface border border-border rounded px-3 py-2",
-                "text-sm text-ink placeholder:text-ink-faint",
-                "focus:outline-none focus:border-accent transition-colors"
-              )}
-            />
-            <p className="text-xs text-ink-faint leading-relaxed">
-              Tape <span className="font-mono text-accent">wttj</span> pour tes jobs-matches,
-              ou colle une URL France Travail / LinkedIn / Indeed.
-            </p>
-          </div>
-
-          {/* Résultat */}
           {result && (
             <div className={cn(
-              "rounded px-3 py-2 text-sm",
+              "rounded-md px-3 py-2 text-xs",
               result.inserted > 0
-                ? "bg-status-interview text-statusText-interview"
-                : "bg-surface-overlay text-ink-muted"
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                : "bg-bg-overlay text-ink-muted border border-border"
             )}>
               {result.inserted > 0
                 ? `${result.inserted} offre${result.inserted > 1 ? "s" : ""} ajoutée${result.inserted > 1 ? "s" : ""} depuis ${result.source}.`
@@ -114,34 +80,26 @@ export function ScrapeModal({ open, onClose, onSuccess }: ScrapeModalProps) {
           )}
 
           {error && (
-            <div className="rounded px-3 py-2 text-sm bg-status-refused text-statusText-refused">
+            <div className="rounded-md px-3 py-2 text-xs bg-red-50 text-red-700 border border-red-200">
               {error}
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border">
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 text-sm text-ink-muted hover:text-ink transition-colors"
-          >
+        <DialogFooter className="px-5 py-3 border-t border-border mt-0">
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Fermer
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             onClick={() => void handleSubmit()}
             disabled={loading || !url.trim()}
-            className={cn(
-              "flex items-center gap-2 px-4 py-1.5 rounded text-sm font-medium transition-colors",
-              "bg-accent hover:bg-accent-hover text-white",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
           >
             {loading && <Loader2 size={13} className="animate-spin" />}
             {loading ? "Scrape en cours…" : "Lancer"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
