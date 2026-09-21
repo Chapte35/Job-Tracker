@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    @apply bg-bg text-ink antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Dark mode overrides */
+  .dark body { @apply bg-[#141412] text-[#e8e8e4]; }
+  .dark .bg-bg { background-color: #141412; }
+  .dark .bg-bg-raised { background-color: #1e1e1b; }
+  .dark .bg-bg-overlay { background-color: #252521; }
+  .dark .border-border { border-color: #2e2e2a; }
+  .dark .border-border-subtle { border-color: #252521; }
+  .dark .border-border-strong { border-color: #3e3e38; }
+  .dark .text-ink { color: #e8e8e4; }
+  .dark .text-ink-muted { color: #8a8a84; }
+  .dark .text-ink-faint { color: #55554f; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+}
+
+@layer utilities {
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
