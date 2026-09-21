@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, RefreshCw, Send, Eye } from "lucide-react";
+import { Loader2, RefreshCw, Send, Eye, Sparkles, Code } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { Offer } from "@/types/supabase";
 import type { CvPatch } from "@/lib/cv/patcher";
+import type { ApplyAdvice } from "@/lib/ai/applyAdvice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,31 +37,114 @@ const DEFAULT_ACCROCHE =
 const DEFAULT_FOLLOW_UP = 7;
 
 type Step = "compose" | "preview" | "sending" | "done";
+type MailView = "preview" | "source";
+
+// ─── Convertit le texte brut du mail en HTML stylisé pour le recruteur ─────────
+
+function mailTextToHtml(text: string): string {
+  const lines = text.split("\n");
+  const htmlLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === "") {
+      htmlLines.push('<div style="height:12px"></div>');
+    } else {
+      htmlLines.push(
+        `<p style="margin:0;padding:0;line-height:1.6">${trimmed.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`
+      );
+    }
+  }
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Candidature</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7">
+          <tr>
+            <td style="background:#18181b;padding:20px 32px">
+              <p style="margin:0;color:#ffffff;font-size:13px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;opacity:0.7">Candidature</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;color:#18181b;font-size:15px">
+              ${htmlLines.join("\n              ")}
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#fafafa;border-top:1px solid #e4e4e7;padding:16px 32px">
+              <a href="https://chapte.dev" style="color:#71717a;font-size:12px;text-decoration:none">chapte.dev</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+// ─── Composant principal ──────────────────────────────────────────────────────
 
 export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
   const [step, setStep] = useState<Step>("compose");
   const [emailTo, setEmailTo] = useState("");
   const [subject, setSubject] = useState("");
   const [mailBody, setMailBody] = useState("");
+  const [mailView, setMailView] = useState<MailView>("source");
   const [accroche, setAccroche] = useState(DEFAULT_ACCROCHE);
   const [accentTags, setAccentTags] = useState<string[]>([]);
   const [followUpDays, setFollowUpDays] = useState(DEFAULT_FOLLOW_UP);
   const [generating, setGenerating] = useState(false);
+  const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [cvPreviewUrl, setCvPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Reset au changement d'offre + fetch advice pour pré-sélectionner les tags ──
   useEffect(() => {
-    if (offer) {
-      setStep("compose");
-      setEmailTo("");
-      setSubject(`Candidature ${offer.title} — ${offer.company}`);
-      setMailBody("");
-      setAccroche(DEFAULT_ACCROCHE);
-      setAccentTags([]);
-      setFollowUpDays(DEFAULT_FOLLOW_UP);
-      setCvPreviewUrl(null);
-      setError(null);
-    }
+    if (!offer) return;
+
+    setStep("compose");
+    setEmailTo("");
+    setSubject(`Candidature ${offer.title} — ${offer.company}`);
+    setMailBody("");
+    setMailView("source");
+    setAccroche(DEFAULT_ACCROCHE);
+    setAccentTags([]);
+    setFollowUpDays(DEFAULT_FOLLOW_UP);
+    setCvPreviewUrl(null);
+    setError(null);
+    setLoadingAdvice(false);
+
+    // Fetch apply-advice pour pré-sélectionner les tags Ollama
+    const fetchAdvice = async () => {
+      setLoadingAdvice(true);
+      try {
+        const res = await fetch(`/api/offers/${offer.id}/apply-advice`);
+        if (!res.ok) return;
+        const data = (await res.json()) as ApplyAdvice;
+        if (Array.isArray(data.suggestedTags) && data.suggestedTags.length > 0) {
+          // Ne pré-sélectionner que les tags présents dans ALL_CV_TAGS
+          const valid = data.suggestedTags.filter((t) =>
+            ALL_CV_TAGS.some((cv) => cv.toLowerCase() === t.toLowerCase())
+          );
+          setAccentTags(valid);
+        }
+      } catch {
+        // silencieux — la pré-sélection est un best-effort
+      } finally {
+        setLoadingAdvice(false);
+      }
+    };
+
+    void fetchAdvice();
   }, [offer?.id]);
 
   if (!offer) return null;
@@ -70,6 +154,8 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
   };
+
+  // ── Génération mail ──────────────────────────────────────────────────────────
 
   const handleGenerateMail = async () => {
     setGenerating(true);
@@ -88,13 +174,18 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
       const data = (await res.json()) as { subject?: string; body?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
       if (data.subject) setSubject(data.subject);
-      if (data.body) setMailBody(data.body);
+      if (data.body) {
+        setMailBody(data.body);
+        setMailView("preview");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur génération mail");
     } finally {
       setGenerating(false);
     }
   };
+
+  // ── Preview CV ───────────────────────────────────────────────────────────────
 
   const handlePreviewCv = async () => {
     setGenerating(true);
@@ -118,6 +209,8 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
       setGenerating(false);
     }
   };
+
+  // ── Envoi ────────────────────────────────────────────────────────────────────
 
   const handleSend = async () => {
     if (!emailTo || !subject || !mailBody) {
@@ -152,6 +245,10 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
     }
   };
 
+  const htmlMail = mailBody ? mailTextToHtml(mailBody) : "";
+
+  // ─── Rendu ───────────────────────────────────────────────────────────────────
+
   return (
     <Dialog open={!!offer} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className={cn(
@@ -166,7 +263,7 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Done */}
+        {/* ── Done ── */}
         {step === "done" && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -177,7 +274,7 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
           </div>
         )}
 
-        {/* Preview CV */}
+        {/* ── Preview CV ── */}
         {step === "preview" && cvPreviewUrl && (
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1">
@@ -203,7 +300,7 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
           </div>
         )}
 
-        {/* Sending */}
+        {/* ── Sending ── */}
         {step === "sending" && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -213,7 +310,7 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
           </div>
         )}
 
-        {/* Compose */}
+        {/* ── Compose ── */}
         {step === "compose" && (
           <>
             <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
@@ -223,7 +320,7 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
                 </div>
               )}
 
-              {/* Section CV */}
+              {/* ── Section CV ── */}
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-medium text-ink-muted uppercase tracking-wider">CV à envoyer</p>
 
@@ -237,10 +334,19 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-ink-muted">
-                    Technos à mettre en avant{" "}
-                    <span className="text-ink-faint">({accentTags.length} sélectionnées)</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-ink-muted">
+                      Technos à mettre en avant{" "}
+                      <span className="text-ink-faint">({accentTags.length} sélectionnées)</span>
+                    </label>
+                    {loadingAdvice && (
+                      <span className="flex items-center gap-1 text-xs text-ink-faint">
+                        <Loader2 size={10} className="animate-spin" />
+                        <Sparkles size={10} />
+                        Suggestions IA…
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-1.5">
                     {ALL_CV_TAGS.map((tag) => (
                       <button
@@ -273,7 +379,7 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
 
               <hr className="border-border" />
 
-              {/* Section mail */}
+              {/* ── Section mail ── */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-ink-muted uppercase tracking-wider">Mail</p>
@@ -310,15 +416,58 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
                   />
                 </div>
 
+                {/* Corps du mail : toggle preview HTML / source texte */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-ink-muted">Corps du mail</label>
-                  <Textarea
-                    value={mailBody}
-                    onChange={(e) => setMailBody(e.target.value)}
-                    rows={10}
-                    placeholder="Clique sur 'Générer via Qwen' ou écris ton mail ici…"
-                    className="font-mono text-xs"
-                  />
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-ink-muted">Corps du mail</label>
+                    {mailBody && (
+                      <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-bg-overlay border border-border">
+                        <button
+                          onClick={() => setMailView("preview")}
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors",
+                            mailView === "preview"
+                              ? "bg-bg text-ink shadow-sm"
+                              : "text-ink-muted hover:text-ink"
+                          )}
+                        >
+                          <Eye size={10} />
+                          Aperçu
+                        </button>
+                        <button
+                          onClick={() => setMailView("source")}
+                          className={cn(
+                            "flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors",
+                            mailView === "source"
+                              ? "bg-bg text-ink shadow-sm"
+                              : "text-ink-muted hover:text-ink"
+                          )}
+                        >
+                          <Code size={10} />
+                          Texte
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {mailView === "preview" && mailBody ? (
+                    <div className="rounded-md border border-border overflow-hidden" style={{ height: 320 }}>
+                      <iframe
+                        srcDoc={htmlMail}
+                        className="w-full h-full border-0 bg-white"
+                        title="Aperçu mail recruteur"
+                        sandbox="allow-same-origin"
+                      />
+                    </div>
+                  ) : (
+                    <Textarea
+                      value={mailBody}
+                      onChange={(e) => setMailBody(e.target.value)}
+                      rows={10}
+                      placeholder="Clique sur 'Générer via Qwen' ou écris ton mail ici…"
+                      className="font-mono text-xs"
+                    />
+                  )}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -336,6 +485,7 @@ export function ApplyModal({ offer, onClose, onSuccess }: ApplyModalProps) {
               </div>
             </div>
 
+            {/* Footer */}
             <div className="shrink-0 px-5 py-3 border-t border-border flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={onClose}>
                 Annuler

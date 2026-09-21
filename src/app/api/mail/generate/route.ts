@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateMail, type MailGenerationInput } from "@/lib/mail/ollama";
+import { getCandidateProfile } from "@/lib/ai/profile";
 
 export const maxDuration = 60;
 
@@ -19,6 +20,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Injecter la signature depuis le profil si non fournie dans le body
+    if (!body.signature) {
+      const profile = await getCandidateProfile();
+      if (profile?.mail_signature?.trim()) {
+        body = { ...body, signature: profile.mail_signature };
+      }
+    }
+
     const mail = await generateMail(body);
     return NextResponse.json(mail);
   } catch (err) {

@@ -5,6 +5,51 @@ import { generateCvPdf } from "@/lib/cv/generator";
 import { generateFollowUpMail } from "@/lib/mail/ollama";
 import type { CvPatch } from "@/lib/cv/patcher";
 
+// ─── Conversion texte brut → HTML email ───────────────────────────────────────
+
+function mailTextToHtml(text: string): string {
+  const lines = text.split("\n");
+  const htmlLines = lines.map((line) => {
+    const trimmed = line.trim();
+    if (trimmed === "") return '<div style="height:12px"></div>';
+    return `<p style="margin:0;padding:0;line-height:1.6">${trimmed.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`;
+  });
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Candidature</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7">
+          <tr>
+            <td style="background:#18181b;padding:20px 32px">
+              <p style="margin:0;color:#ffffff;font-size:13px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;opacity:0.7">Candidature</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;color:#18181b;font-size:15px">
+              ${htmlLines.join("\n              ")}
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#fafafa;border-top:1px solid #e4e4e7;padding:16px 32px">
+              <a href="https://chapte.dev" style="color:#71717a;font-size:12px;text-decoration:none">chapte.dev</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 export const maxDuration = 120;
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -67,6 +112,7 @@ export async function POST(req: NextRequest) {
     to: recipients,
     subject,
     text: mailBody,
+    html: mailTextToHtml(mailBody),
     attachments: [{ filename: pdfFilename, content: pdfBuffer }],
   });
 

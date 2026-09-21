@@ -102,10 +102,11 @@ interface FieldProps {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
-  type?: "text" | "number";
+  type?: "text" | "number" | "tel";
+  hint?: string;
 }
 
-function Field({ label, value, onChange, placeholder, type = "text" }: FieldProps) {
+function Field({ label, value, onChange, placeholder, type = "text", hint }: FieldProps) {
   return (
     <div>
       <label className="block text-xs font-medium text-ink mb-1.5">{label}</label>
@@ -116,6 +117,38 @@ function Field({ label, value, onChange, placeholder, type = "text" }: FieldProp
         placeholder={placeholder}
         className="w-full px-3 py-1.5 text-xs rounded-md border border-border bg-bg text-ink placeholder:text-ink-faint focus:outline-none focus:ring-1 focus:ring-accent"
       />
+      {hint && <p className="text-xs text-ink-faint mt-1">{hint}</p>}
+    </div>
+  );
+}
+
+// ─── Champ textarea ────────────────────────────────────────────────────────
+
+interface TextareaFieldProps {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+  hint?: string;
+  mono?: boolean;
+}
+
+function TextareaField({ label, value, onChange, placeholder, rows = 4, hint, mono }: TextareaFieldProps) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-ink mb-1.5">{label}</label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        placeholder={placeholder}
+        className={cn(
+          "w-full px-3 py-2 text-xs rounded-md border border-border bg-bg text-ink placeholder:text-ink-faint focus:outline-none focus:ring-1 focus:ring-accent resize-y leading-relaxed",
+          mono && "font-mono"
+        )}
+      />
+      {hint && <p className="text-xs text-ink-faint mt-1">{hint}</p>}
     </div>
   );
 }
@@ -255,7 +288,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Contenu */}
-        <div className="max-w-2xl mx-auto px-6 py-6 space-y-5">
+        <div className="max-w-2xl mx-auto px-6 py-6 pb-24 space-y-5">
           {loading ? (
             <div className="flex items-center gap-2 py-8 text-xs text-ink-faint">
               <Loader2 size={14} className="animate-spin" />
@@ -299,6 +332,14 @@ export default function SettingsPage() {
                     value={String(profile.experience_years)}
                     onChange={(v) => set("experience_years", parseInt(v, 10) || 0)}
                     type="number"
+                  />
+                  <Field
+                    label="Téléphone"
+                    value={profile.phone}
+                    onChange={(v) => set("phone", v)}
+                    placeholder="06 XX XX XX XX"
+                    type="tel"
+                    hint="Utilisé pour pré-remplir les candidatures"
                   />
                 </div>
               </Section>
@@ -353,26 +394,30 @@ export default function SettingsPage() {
                 />
               </Section>
 
+              {/* ── Candidature ── */}
+              <Section title="Candidature">
+                <TextareaField
+                  label="Signature mail"
+                  value={profile.mail_signature}
+                  onChange={(v) => set("mail_signature", v)}
+                  rows={4}
+                  mono
+                  placeholder={`Prénom Nom\nDéveloppeur Full-Stack — EI\nsite.dev`}
+                  hint="Utilisée automatiquement à la fin de chaque mail généré par Ollama."
+                />
+              </Section>
+
               {/* ── Texte libre (contexte IA) ── */}
               <Section title="Contexte libre pour l'IA">
-                <div>
-                  <label className="block text-xs font-medium text-ink mb-1.5">
-                    Description personnalisée
-                    <span className="text-ink-faint font-normal ml-1">
-                      (utilisée prioritairement par Ollama pour scorer les offres)
-                    </span>
-                  </label>
-                  <textarea
-                    value={profile.free_text}
-                    onChange={(e) => set("free_text", e.target.value)}
-                    rows={6}
-                    placeholder="Décris ton profil librement : expériences marquantes, stack de prédilection, ambitions, contraintes…"
-                    className="w-full px-3 py-2 text-xs rounded-md border border-border bg-bg text-ink placeholder:text-ink-faint focus:outline-none focus:ring-1 focus:ring-accent resize-y font-mono leading-relaxed"
-                  />
-                  <p className="text-xs text-ink-faint mt-1">
-                    Si vide, un texte est généré automatiquement depuis les champs ci-dessus.
-                  </p>
-                </div>
+                <TextareaField
+                  label="Description personnalisée"
+                  value={profile.free_text}
+                  onChange={(v) => set("free_text", v)}
+                  rows={6}
+                  mono
+                  placeholder="Décris ton profil librement : expériences marquantes, stack de prédilection, ambitions, contraintes…"
+                  hint="Si vide, un texte est généré automatiquement depuis les champs ci-dessus."
+                />
               </Section>
 
               {/* ── Actions IA ── */}
@@ -421,6 +466,31 @@ export default function SettingsPage() {
             </>
           )}
         </div>
+        {/* Footer sticky — bouton sauvegarder en bas de page */}
+        {profile && (
+          <div className="fixed bottom-0 left-0 right-0 z-10 bg-bg border-t border-border px-6 py-3 flex justify-end">
+            <Button
+              size="sm"
+              onClick={() => void save()}
+              disabled={saveState === "saving"}
+            >
+              {saveState === "saving" ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : saveState === "saved" ? (
+                <CheckCircle size={13} className="text-green-500" />
+              ) : saveState === "error" ? (
+                <AlertCircle size={13} className="text-red-500" />
+              ) : (
+                <Save size={13} />
+              )}
+              {saveState === "saved"
+                ? "Sauvegardé"
+                : saveState === "error"
+                ? "Erreur"
+                : "Sauvegarder"}
+            </Button>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -91,6 +91,8 @@ export interface CandidateProfile {
   mission_types: string[];
   not_interested: string[];
   experience_years: number;
+  phone: string;
+  mail_signature: string;
   free_text: string;
   updated_at: string;
 }
